@@ -23,7 +23,7 @@ jobs:
         uses: ublue-os/remove-unwanted-software@v7
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # 将 GitHub 用户名/组织名强制转换为纯小写，防止 Podman 推送因大写字符报错
       - name: Set lower case registry name
