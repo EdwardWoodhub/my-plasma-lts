@@ -54,7 +54,7 @@ jobs:
 
       - name: Push to GHCR
         id: push-to-ghcr
-        uses: redhat-actions/push-to-registry@v2
+        uses: redhat-actions/push-to-registry@v3
         with:
           image: ${{ env.IMAGE_NAME }}
           tags: latest
