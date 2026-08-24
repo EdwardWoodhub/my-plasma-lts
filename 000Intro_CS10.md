@@ -21,6 +21,7 @@ graph TD
     %% 不可变路线框
     subgraph Atomic ["不可变 / 云原生路线"]
         F["Fedora Atomic - 官方底座"]
+        J["CentOS Stream - 官方底座"]
         G["uBlue-os - 社区定制"]
         H["customized-OS - 个人定制 (Desktop)"]
         I["customized-OS - 个人定制 (Server/Cloud)"]
@@ -31,8 +32,9 @@ graph TD
 
     %% 建立顶级连接与 bootc 定制分支
     A --> B
+    A --> J
     A --> F
-    B -- bootc --> I
+    J -- bootc --> I
 
     %% 样式美化（可选，增加区分度）
     style Traditional fill:#f5f5f5,stroke:#666,stroke-dasharray: 5 5
