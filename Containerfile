@@ -39,9 +39,8 @@ RUN dnf install -y \
     # 视频播放器与文本编辑器
     vlc \
     gedit \
-    # 图像查看器（Gwenview 为 KDE 原生，eog 为 GTK 原生，可按需保留）
+    # 图像查看器（Gwenview 为 KDE 原生）
     gwenview \
-    eog \
     # 常见格式支持与图形加速库 (WebP, HEIF, Qt6 图像插件)
     libwebp \
     libheif \
