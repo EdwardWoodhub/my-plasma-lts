@@ -2,12 +2,16 @@
 FROM quay.io/centos-bootc/centos-bootc:stream10
 
 # 2. 启用 EPEL 10 与 CRB 仓库 (KDE Plasma 6 基础源)
-RUN dnf install -y 'https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm' && \
-    dnf config-manager --set-enabled crb
+RUN dnf install -y --setopt=install_weak_deps=False \
+        epel-release \
+        dnf-plugins-core && \
+    dnf config-manager --set-enabled crb && \
+    dnf install -y --nogpgcheck \
+        https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-10.noarch.rpm \
+        https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-10.noarch.rpm
 
 # 3. 安装指定的 RPM 软件包
 RUN dnf install -y \
-    mesa-dri-drivers \
     xorg-x11-server-Xwayland \
     sddm \
     dbus-x11 \
@@ -32,7 +36,20 @@ RUN dnf install -y \
     kscreen \
     open-vm-tools \
     open-vm-tools-desktop \
-    && dnf clean all
+    # 视频播放器与文本编辑器
+    vlc \
+    gedit \
+    # 图像查看器（Gwenview 为 KDE 原生，eog 为 GTK 原生，可按需保留）
+    gwenview \
+    eog \
+    # 常见格式支持与图形加速库 (WebP, HEIF, Qt6 图像插件)
+    libwebp \
+    libheif \
+    qt6-qtimageformats \
+    mesa-dri-drivers \
+    glx-utils && \
+    dnf clean all && \
+    rm -rf /var/cache/dnf/* /tmp/* /var/tmp/*
 
 # 4. 配置默认启动目标为图形界面，并启用 SDDM 显示管理器
 RUN systemctl set-default graphical.target && \
