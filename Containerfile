@@ -7,7 +7,7 @@ RUN dnf install -y --setopt=install_weak_deps=False \
         dnf-plugins-core && \
     dnf config-manager --set-enabled crb && \
     # 添加 Terra 10 软件源 (提供 Nerd Fonts、更纱黑体、ms-core-fonts)
-    dnf config-manager --add-repo https://repos.fyralabs.com/terra10 && \
+    # dnf config-manager --add-repo https://repos.fyralabs.com/terra10 && \
     # 启用 RPM Fusion 源 (提供多媒体 Codec 与 VLC)
     dnf install -y --nogpgcheck \
         https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-10.noarch.rpm \
@@ -51,13 +51,13 @@ RUN dnf install -y \
     mesa-dri-drivers \
     glx-utils \
     # --- Terra 字体包 ---
-    noto-nerd-fonts \
-    adobe-source-han-sans-fonts \
-    sarasa-gothic-fonts \
-    cascadiacode-nerd-fonts \
-    iosevka-nerd-fonts \
-    liberationmono-nerd-fonts \
-    ms-core-fonts \
+    # noto-nerd-fonts \
+    # adobe-source-han-sans-fonts \
+    # sarasa-gothic-fonts \
+    # cascadiacode-nerd-fonts \
+    # iosevka-nerd-fonts \
+    # liberationmono-nerd-fonts \
+    # ms-core-fonts \
     # --- EPEL 字体包 ---
     wqy-zenhei-fonts \
     jetbrains-mono-fonts-all \
