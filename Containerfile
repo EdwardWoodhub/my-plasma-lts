@@ -1,11 +1,14 @@
 # 1. 继承红帽官方纯正 CentOS Stream 10 底座 (锁定纯正 .el10 内核)
 FROM quay.io/centos-bootc/centos-bootc:stream10
 
-# 2. 启用 EPEL 10 与 CRB 仓库 (KDE Plasma 6 基础源)
+# 2. 启用 EPEL 10、CRB、RPM Fusion 与 Terra 仓库
 RUN dnf install -y --setopt=install_weak_deps=False \
         epel-release \
         dnf-plugins-core && \
     dnf config-manager --set-enabled crb && \
+    # 添加 Terra 10 软件源 (提供 Nerd Fonts、更纱黑体、ms-core-fonts)
+    dnf config-manager --add-repo https://repos.fyralabs.com/terra10 && \
+    # 启用 RPM Fusion 源 (提供多媒体 Codec 与 VLC)
     dnf install -y --nogpgcheck \
         https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-10.noarch.rpm \
         https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-10.noarch.rpm
@@ -46,7 +49,23 @@ RUN dnf install -y \
     libheif \
     qt6-qtimageformats \
     mesa-dri-drivers \
-    glx-utils && \
+    glx-utils \
+    # --- Terra 字体包 ---
+    noto-nerd-fonts \
+    adobe-source-han-sans-fonts \
+    sarasa-gothic-fonts \
+    cascadiacode-nerd-fonts \
+    iosevka-nerd-fonts \
+    liberationmono-nerd-fonts \
+    ms-core-fonts \
+    # --- EPEL 字体包 ---
+    wqy-zenhei-fonts \
+    jetbrains-mono-fonts-all \
+    fira-code-fonts \
+    liberation-mono-fonts \
+    # --- 字体缓存工具 ---
+    fontconfig && \
+    fc-cache -fv && \
     dnf clean all && \
     rm -rf /var/cache/dnf/* /tmp/* /var/tmp/*
 
