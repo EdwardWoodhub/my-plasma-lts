@@ -37,7 +37,7 @@ jobs:
         uses: sigstore/cosign-installer@v3.5.0
 
       - name: Log into GitHub Container Registry
-        uses: redhat-actions/podman-login@v1
+        uses: redhat-actions/podman-login@v2
         with:
           registry: ghcr.io
           username: ${{ env.ACTOR_LOWER }}
@@ -72,7 +72,7 @@ jobs:
       # =========================================================================
       - name: Log in to Aliyun ACR
         if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
-        uses: redhat-actions/podman-login@v1
+        uses: redhat-actions/podman-login@v2
         with:
           registry: ${{ secrets.ALIYUN_ACR_REGISTRY }}
           username: ${{ secrets.ALIYUN_ACR_USERNAME }}
