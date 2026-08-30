@@ -66,3 +66,30 @@ jobs:
         run: |
           cosign sign --yes --key env://COSIGN_PRIVATE_KEY \
             "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+
+# =========================================================================
+      # 1. 登录阿里云 ACR（主分支推送、每日定时、手动触发均执行）
+      # =========================================================================
+      - name: Log in to Aliyun ACR
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+        uses: redhat-actions/podman-login@v1
+        with:
+          registry: ${{ secrets.ALIYUN_ACR_REGISTRY }}
+          username: ${{ secrets.ALIYUN_ACR_USERNAME }}
+          password: ${{ secrets.ALIYUN_ACR_PASSWORD }}
+
+      # =========================================================================
+      # 2. 兼容模式同步镜像到阿里云 ACR（自动适配 CentOS 10 Plasma 镜像名）
+      # =========================================================================
+      - name: Sync OCI Image from GHCR to Aliyun ACR
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+        run: |
+          echo "Syncing ${{ env.IMAGE_NAME }}:latest to Aliyun ACR..."
+          skopeo copy \
+            --src-creds "${{ env.ACTOR_LOWER }}:${{ secrets.GITHUB_TOKEN }}" \
+            --dest-creds "${{ secrets.ALIYUN_ACR_USERNAME }}:${{ secrets.ALIYUN_ACR_PASSWORD }}" \
+            --dest-compress-format gzip \
+            --format v2s2 \
+            docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            docker://${{ secrets.ALIYUN_ACR_REGISTRY }}/${{ env.ACTOR_LOWER }}/${{ env.IMAGE_NAME }}:latest
+            
