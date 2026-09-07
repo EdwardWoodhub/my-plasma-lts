@@ -15,56 +15,51 @@ RUN dnf install -y --setopt=install_weak_deps=False \
 
 # 3. 安装指定的 RPM 软件包
 RUN dnf install -y \
-    xorg-x11-server-Xwayland \
-    sddm \
+    btop \
     dbus-x11 \
-    xdg-desktop-portal \
-    xdg-user-dirs \
-    plasma-workspace \
-    plasma-desktop \
-    kwin \
-    polkit-kde \
-    plasma-firewall-firewalld \
     dolphin \
-    konsole \
-    kate \
+    fira-code-fonts \
+    flatpak \
     firefox \
     fastfetch \
-    spectacle \
-    syncthing \
-    git \
-    htop \
-    btop \
-    flatpak \
-    kscreen \
-    open-vm-tools \
-    open-vm-tools-desktop \
-    # 视频播放器与文本编辑器
-    vlc \
+    fontconfig \
     gedit \
-    # 图像查看器（Gwenview 为 KDE 原生）
+    git \
     gwenview \
-    # 常见格式支持与图形加速库 (WebP, HEIF, Qt6 图像插件)
+    glx-utils \
+    htop \
+    jetbrains-mono-fonts-all \
+    kate \
+    kscreen \
+    konsole \
+    kwin \
     libwebp \
     libheif \
-    qt6-qtimageformats \
+    liberation-mono-fonts \
     mesa-dri-drivers \
-    glx-utils \
+    open-vm-tools \
+    open-vm-tools-desktop \
+    polkit-kde \
+    plasma-workspace \
+    plasma-desktop \
+    plasma-firewall-firewalld \
+    qt6-qtimageformats \
+    sddm \
+    spectacle \
+    syncthing \
+    vlc \
+    wqy-zenhei-fonts \
+    xdg-desktop-portal \
+    xdg-user-dirs \
+    xorg-x11-server-Xwayland && \
     # --- Terra 字体包 ---
-    # noto-nerd-fonts \
     # adobe-source-han-sans-fonts \
-    # sarasa-gothic-fonts \
     # cascadiacode-nerd-fonts \
     # iosevka-nerd-fonts \
     # liberationmono-nerd-fonts \
     # ms-core-fonts \
-    # --- EPEL 字体包 ---
-    wqy-zenhei-fonts \
-    jetbrains-mono-fonts-all \
-    fira-code-fonts \
-    liberation-mono-fonts \
-    # --- 字体缓存工具 ---
-    fontconfig && \
+    # noto-nerd-fonts \
+    # sarasa-gothic-fonts \
     fc-cache -fv && \
     dnf clean all && \
     rm -rf /var/cache/dnf/* /tmp/* /var/tmp/*
@@ -85,15 +80,15 @@ RUN mkdir -p /usr/libexec/my-custom-setup && \
       '#!/usr/bin/env bash' \
       'set -e' \
       'FLATPAKS=(' \
-      '  org.mozilla.firefox' \
       '  com.google.Chrome' \
-      '  com.github.tchx84.Flatseal' \
-      '  com.xnview.XnViewMP' \
       '  com.visualstudio.code' \
-      '  net.nokyan.Resources' \
+      '  com.github.tchx84.Flatseal' \
+      '  org.mozilla.firefox' \
       '  io.missioncenter.MissionCenter' \
-      '  io.github.peazip.PeaZip' \
       '  com.jianguoyun.Nutstore' \
+      '  io.github.peazip.PeaZip' \
+      '  net.nokyan.Resources' \
+      '  com.xnview.XnViewMP' \
       ')' \
       'for app in "${FLATPAKS[@]}"; do' \
       '  flatpak install --system -y --noninteractive flathub "$app" || true' \
