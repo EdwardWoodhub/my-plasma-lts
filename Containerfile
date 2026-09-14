@@ -36,6 +36,7 @@ RUN dnf install -y \
     libwebp \
     libheif \
     liberation-mono-fonts \
+    meld \
     mesa-dri-drivers \
     open-vm-tools \
     open-vm-tools-desktop \
