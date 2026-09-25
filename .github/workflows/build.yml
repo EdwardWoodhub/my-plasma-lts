@@ -1,8 +1,11 @@
-name: Build Pure CentOS 10 Plasma Bootc Image
+name: Build Plasma OS Based On CentOS 10 Bootc Image 
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
+    paths-ignore:
+      - "**.md"  
   schedule:
     - cron: "28 20 * * *" # 每天 UTC 20:28 (对应北京时间 CST 04:28)
   workflow_dispatch:
