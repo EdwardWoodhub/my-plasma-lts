@@ -178,7 +178,7 @@ jobs:
         if: github.event_name != 'workflow_dispatch' || inputs.build_iso == true
         run: |
           echo "Logging into ORAS for GHCR..."
-          oras login ghcr.io -u "${{ env.ACTOR_LOWER }}" -p "${{ secrets.GITHUB_TOKEN }}"
+          echo "${{ secrets.GITHUB_TOKEN }}" | oras login ghcr.io -u "${{ env.ACTOR_LOWER }}" --password-stdin
 
           echo "Pushing ISO artifact blob to GHCR..."
           oras push "${{ env.REGISTRY }}/${{ env.ISO_NAME }}:latest" \
@@ -190,10 +190,15 @@ jobs:
           ((github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')
         run: |
           echo "Logging into ORAS for Aliyun ACR..."
-          oras login "${{ secrets.ALIYUN_ACR_REGISTRY }}" \
+          echo "${{ secrets.ALIYUN_ACR_PASSWORD }}" | oras login "${{ secrets.ALIYUN_ACR_REGISTRY }}" \
             -u "${{ secrets.ALIYUN_ACR_USERNAME }}" \
-            -p "${{ secrets.ALIYUN_ACR_PASSWORD }}"
+            --password-stdin
 
-          echo "Pushing ISO artifact blob to Aliyun ACR..."
-          oras push "${{ secrets.ALIYUN_ACR_REGISTRY }}/${{ env.ACTOR_LOWER }}/${{ env.ISO_NAME }}:latest" \
-            "${{ env.ISO_NAME }}.iso:application/x-iso9660-image"
+          echo "Pushing ISO artifact blob to Aliyun ACR with compatible media type..."
+          # 关键修改：将 layer media type 伪装为 ACR 兼容的 Docker 镜像层类型
+          oras push \
+            --artifact-type "application/vnd.docker.distribution.manifest.v2+json" \
+            "${{ secrets.ALIYUN_ACR_REGISTRY }}/${{ env.ACTOR_LOWER }}/${{ env.ISO_NAME }}:latest" \
+            "${{ env.ISO_NAME }}.iso:application/vnd.docker.image.rootfs.diff.tar"
+      
+      
