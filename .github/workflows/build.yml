@@ -178,8 +178,14 @@ jobs:
       - name: Package ISO into Container Image & Push
         if: github.event_name != 'workflow_dispatch' || inputs.build_iso == true
         run: |
+          # 1. 修复之前 sudo 执行命令残留的权限锁定问题
+          sudo chown -R $USER:$USER /run/user/$(id -u)/containers 2>/dev/null || true
+          sudo chown -R $USER:$USER /home/runner/.config/containers 2>/dev/null || true
+
+          # 2. 重新用当前用户登录 GHCR，确保认证文件有效
+          podman login ghcr.io -u "${{ env.ACTOR_LOWER }}" -p "${{ secrets.GITHUB_TOKEN }}"
+
           echo "Creating containerfile for ISO packaging..."
-          # 创建一个基于 scratch 的极轻量容器，仅包含 iso 文件
           cat << 'EOF' > Containerfile.iso
           FROM scratch
           COPY my-plasma-lts-live.iso /my-plasma-lts-live.iso
@@ -189,7 +195,9 @@ jobs:
           podman build -t "${{ env.REGISTRY }}/${{ env.ISO_NAME }}:latest" -f Containerfile.iso .
 
           echo "Pushing ISO container image to GHCR..."
-          podman push "${{ env.REGISTRY }}/${{ env.ISO_NAME }}:latest"
+          podman push \
+            --creds "${{ env.ACTOR_LOWER }}:${{ secrets.GITHUB_TOKEN }}" \
+            "${{ env.REGISTRY }}/${{ env.ISO_NAME }}:latest"
 
       - name: Sync ISO Container Image to Aliyun ACR
         if: |
@@ -204,8 +212,7 @@ jobs:
             --format v2s2 \
             docker://${{ env.REGISTRY }}/${{ env.ISO_NAME }}:latest \
             docker://${{ secrets.ALIYUN_ACR_REGISTRY }}/${{ env.ACTOR_LOWER }}/${{ env.ISO_NAME }}:latest
-
-            
       
+        
       
       
