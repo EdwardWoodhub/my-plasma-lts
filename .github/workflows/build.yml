@@ -1,4 +1,4 @@
-name: Build Plasma OS Based On CentOS 10 Bootc Image 
+name: Build Plasma OS Bootc & Live ISO
 
 on:
   push:
@@ -25,11 +25,11 @@ jobs:
     permissions:
       contents: write
       packages: write
-      id-token: write # Cosign 签名权限
+      id-token: write # Cosign 签名必需权限
 
     steps:
       # =========================================================================
-      # 1. 基础环境与空间优化
+      # 1. 基础环境清理与准备
       # =========================================================================
       - name: Maximize build space
         uses: ublue-os/remove-unwanted-software@v7
@@ -72,7 +72,7 @@ jobs:
           password: ${{ secrets.ALIYUN_ACR_PASSWORD }}
 
       # =========================================================================
-      # 3. 构建并推送 Bootc 容器基础镜像
+      # 3. 构建并推送基础 OS 容器镜像
       # =========================================================================
       - name: Build image using Buildah
         id: build-image
@@ -99,8 +99,8 @@ jobs:
           cosign sign --yes --key env://COSIGN_PRIVATE_KEY \
             "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
 
-      # 同步基础容器镜像至阿里云 ACR
-      - name: Sync OCI Image to Aliyun ACR
+      # 同步 OS 镜像到阿里云 ACR
+      - name: Sync OCI Image from GHCR to Aliyun ACR
         if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
         run: |
           echo "Syncing ${{ env.IMAGE_NAME }}:latest to Aliyun ACR..."
@@ -113,77 +113,48 @@ jobs:
             docker://${{ secrets.ALIYUN_ACR_REGISTRY }}/${{ env.ACTOR_LOWER }}/${{ env.IMAGE_NAME }}:latest
 
       # =========================================================================
-      # 4. 构建 Live ISO (基于 CentOS Bootc Image Builder)
+      # 4. 构建 Live ISO (解决 image not known 问题)
       # =========================================================================
       - name: Build Live ISO with bootc-image-builder
         if: github.event_name != 'workflow_dispatch' || inputs.build_iso == true
         run: |
           mkdir -p output
-          
-          # 针对私有仓库拉取镜像，准备 auth.json
-          mkdir -p config
-          podman login --authfile config/auth.json -u ${{ env.ACTOR_LOWER }} -p ${{ secrets.GITHUB_TOKEN }} ghcr.io
 
-          echo "Starting bootc-image-builder..."
-          # 使用官方针对 CentOS Bootc 的镜像构建器生成 anaconda-iso 安装介质
+          # 1. 在 sudo 权限下登录 GHCR，使 root 用户的 podman 可以拉取私有镜像
+          sudo podman login ghcr.io -u "${{ env.ACTOR_LOWER }}" -p "${{ secrets.GITHUB_TOKEN }}"
+
+          # 2. 提前拉取目标镜像到 root 容器存储空间中
+          echo "Pulling base image to local podman storage..."
+          sudo podman pull "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+
+          # 3. 运行构建器（移除 -it 和 --local 参数）
+          echo "Running bootc-image-builder..."
           sudo podman run \
             --rm \
-            -it \
             --privileged \
-            --pull=newer \
             --net=host \
-            -v ./config/auth.json:/run/auth.json:ro \
             -v ./output:/output \
             -v /var/lib/containers/storage:/var/lib/containers/storage \
             quay.io/centos-bootc/bootc-image-builder:latest \
             --type anaconda-iso \
             --rootfs btrfs \
-            --local \
             "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
 
-          # 寻找生成的 iso 文件并重命名
-          ISO_FILE=$(find output/bootiso -name "*.iso" | head -n 1)
+          # 4. 提取生成的 ISO 并重命名
+          ISO_FILE=$(find output/bootiso -name "*.iso" 2>/dev/null | head -n 1)
           if [ -z "$ISO_FILE" ]; then
             ISO_FILE=$(find output -name "*.iso" | head -n 1)
           fi
-          
-          echo "Moving $ISO_FILE to ./${{ env.ISO_NAME }}.iso"
+
+          echo "Found ISO: $ISO_FILE"
           sudo mv "$ISO_FILE" "./${{ env.ISO_NAME }}.iso"
           sudo chown -R $USER:$USER "./${{ env.ISO_NAME }}.iso"
           ls -lh "${{ env.ISO_NAME }}.iso"
 
       # =========================================================================
-      # 5. 推送 ISO Blob (OCI Artifact) 到 GHCR 和 阿里云 ACR
+      # 5. 切割 ISO 并推送到 GitHub Releases
       # =========================================================================
-      - name: Push ISO Artifact to GHCR
-        if: github.event_name != 'workflow_dispatch' || inputs.build_iso == true
-        run: |
-          echo "Logging into ORAS for GHCR..."
-          oras login ghcr.io -u "${{ env.ACTOR_LOWER }}" -p "${{ secrets.GITHUB_TOKEN }}"
-
-          echo "Pushing ISO artifact blob to GHCR..."
-          # 推送为 application/vnd.oci.image.layer.v1.tar+gzip 或通用 blob 类型
-          oras push "${{ env.REGISTRY }}/${{ env.ISO_NAME }}:latest" \
-            "${{ env.ISO_NAME }}.iso:application/x-iso9660-image"
-
-      - name: Push ISO Artifact to Aliyun ACR
-        if: |
-          (github.event_name != 'workflow_dispatch' || inputs.build_iso == true) &&
-          ((github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')
-        run: |
-          echo "Logging into ORAS for Aliyun ACR..."
-          oras login "${{ secrets.ALIYUN_ACR_REGISTRY }}" \
-            -u "${{ secrets.ALIYUN_ACR_USERNAME }}" \
-            -p "${{ secrets.ALIYUN_ACR_PASSWORD }}"
-
-          echo "Pushing ISO artifact blob to Aliyun ACR..."
-          oras push "${{ secrets.ALIYUN_ACR_REGISTRY }}/${{ env.ACTOR_LOWER }}/${{ env.ISO_NAME }}:latest" \
-            "${{ env.ISO_NAME }}.iso:application/x-iso9660-image"
-
-      # =========================================================================
-      # 6. (可选) 切割 ISO 并发布到 GitHub Releases 供直接下载
-      # =========================================================================
-      - name: Split ISO for GitHub Release
+      - name: Split ISO & Generate Checksum
         if: github.event_name != 'workflow_dispatch' || inputs.build_iso == true
         run: |
           split -b 1800M "${{ env.ISO_NAME }}.iso" "${{ env.ISO_NAME }}.iso.part-"
@@ -199,3 +170,30 @@ jobs:
           tag_name: release-${{ github.run_number }}
           name: "Live ISO Build #${{ github.run_number }}"
           generate_release_notes: true
+
+      # =========================================================================
+      # 6. 推送完整 ISO Blob 到 GHCR 和 阿里云 ACR
+      # =========================================================================
+      - name: Push ISO Artifact Blob to GHCR
+        if: github.event_name != 'workflow_dispatch' || inputs.build_iso == true
+        run: |
+          echo "Logging into ORAS for GHCR..."
+          oras login ghcr.io -u "${{ env.ACTOR_LOWER }}" -p "${{ secrets.GITHUB_TOKEN }}"
+
+          echo "Pushing ISO artifact blob to GHCR..."
+          oras push "${{ env.REGISTRY }}/${{ env.ISO_NAME }}:latest" \
+            "${{ env.ISO_NAME }}.iso:application/x-iso9660-image"
+
+      - name: Push ISO Artifact Blob to Aliyun ACR
+        if: |
+          (github.event_name != 'workflow_dispatch' || inputs.build_iso == true) &&
+          ((github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')
+        run: |
+          echo "Logging into ORAS for Aliyun ACR..."
+          oras login "${{ secrets.ALIYUN_ACR_REGISTRY }}" \
+            -u "${{ secrets.ALIYUN_ACR_USERNAME }}" \
+            -p "${{ secrets.ALIYUN_ACR_PASSWORD }}"
+
+          echo "Pushing ISO artifact blob to Aliyun ACR..."
+          oras push "${{ secrets.ALIYUN_ACR_REGISTRY }}/${{ env.ACTOR_LOWER }}/${{ env.ISO_NAME }}:latest" \
+            "${{ env.ISO_NAME }}.iso:application/x-iso9660-image"
