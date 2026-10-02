@@ -17,7 +17,7 @@ on:
 
 env:
   IMAGE_NAME: my-plasma-lts-vm
-  ISO_NAME: my-plasma-lts-vm
+  ISO_NAME: my-plasma-lts-vm-live
 
 jobs:
   build:
@@ -188,7 +188,7 @@ jobs:
           echo "Creating containerfile for ISO packaging..."
           cat << 'EOF' > Containerfile.iso
           FROM scratch
-          COPY my-plasma-lts-vm.iso /my-plasma-lts-vm.iso
+          COPY my-plasma-lts-vm-live.iso /my-plasma-lts-vm-live.iso
           EOF
 
           echo "Building ISO container image with Podman..."
