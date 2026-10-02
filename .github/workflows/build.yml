@@ -1,4 +1,4 @@
-name: Build Plasma OS Bootc & Live ISO
+name: Build Plasma OS Based On CentOS 10 Bootc Image 
 
 on:
   push:
