@@ -48,6 +48,7 @@ RUN dnf install -y \
     sddm \
     spectacle \
     syncthing \
+    tilix \
     vlc \
     wqy-zenhei-fonts \
     xdg-desktop-portal \
