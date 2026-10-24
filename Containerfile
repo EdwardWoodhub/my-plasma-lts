@@ -44,11 +44,13 @@ RUN dnf install -y \
     plasma-workspace \
     plasma-desktop \
     plasma-firewall-firewalld \
+    python3 \
     qt6-qtimageformats \
     sddm \
     spectacle \
     syncthing \
     tilix \
+    uv \
     vlc \
     wqy-zenhei-fonts \
     xdg-desktop-portal \
